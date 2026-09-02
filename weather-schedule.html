@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Weather Schedule</title>
+<meta name="description" content="Your day, hour by hour: weather next to your calendar." />
+
+<!--
+  =================================================================
+  WEATHER SCHEDULE -- single-file PWA
+  =================================================================
+  Everything (HTML, CSS, JS, manifest, icon) lives in this one file.
+
+  SETUP -- the only thing you need to do:
+  Get a free Google OAuth Client ID (about 3 minutes) so the app can
+  read your calendar, then paste it into GOOGLE_CLIENT_ID below.
+
+    1. Go to https://console.cloud.google.com/ and create a project
+       (or use an existing one).
+    2. Search for "Google Calendar API" and click Enable.
+    3. Go to APIs & Services -> OAuth consent screen. Fill in the
+       required fields (app name, your email) and save. If it's in
+       "Testing" mode, add your own Google account under Test users.
+    4. Go to APIs & Services -> Credentials -> Create Credentials ->
+       OAuth client ID.
+         - Application type: Web application
+         - Authorized JavaScript origins: add the exact origin
+           you'll load this file from, e.g. http://localhost:5500
+           or https://yourname.github.io (no trailing slash, no path)
+    5. Copy the Client ID (ends in .apps.googleusercontent.com) and
+       paste it into the GOOGLE_CLIENT_ID line inside the <script>
+       block near the bottom of this file.
+
+  Weather needs no setup at all -- it uses Open-Meteo, which is free
+  and keyless.
+
+  Serve this file over http:// or https:// (not double-clicked as a
+  file:// path) so Google sign-in and geolocation work, e.g.:
+      python3 -m http.server 5500
+  then open http://localhost:5500/index.html
+  =================================================================
+-->
+
+<link rel="manifest" href="data:application/manifest+json;base64,eyJuYW1lIjoiV2VhdGhlciBTY2hlZHVsZSIsInNob3J0X25hbWUiOiJXZWF0aGVyIFNjaGVkIiwiZGVzY3JpcHRpb24iOiJZb3VyIGRheSwgaG91ciBieSBob3VyOiB3ZWF0aGVyIG5leHQgdG8geW91ciBjYWxlbmRhci4iLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiI0YzRjVGNiIsInRoZW1lX2NvbG9yIjoiIzFCMjczMyIsImljb25zIjpbeyJzcmMiOiJkYXRhOmltYWdlL3BuZztiYXNlNjQsaVZCT1J3MEtHZ29BQUFBTlNVaEVVZ0FBQU1BQUFBREFDQVlBQUFCUzNHd0hBQUFGR0VsRVFWUjRuTzNjTzNMYlpoaUdVVkRqS2x2d0FwdzZxck96bE5sWmFybU9GcUF0cEhVcVdncERrY1QxL3k3bmxKbU1ESExlQndCcEM2Y3BtSy9mbm4rTVBnYjI4L2I2Y2hwOURCOE5QUmhqWjVyR1JuSDRIMnowM0hKMERJZjlZWWJQSEVlRnNQc2ZZdmlzc1hjSXUvMXd3MmRMZTRXdytRODFmUGEwZFFoUFcvNHc0MmR2VzI5c2s1b01ueEcydUJxc3ZnSVlQNk5zc2IxVkFSZy9vNjNkNE9JQWpKOG8xbXh4VVFER1R6UkxOems3QU9NbnFpWGJuQldBOFJQZDNJMCtISUR4azhXY3JUNFVnUEdUemFPYnZSdUE4WlBWSTl2ZDlKOUNRRFkzQTNEMko3dDdHLzQwQU9PbmlsdGJkZ3RFYTFjRGNQYW5tczgyN1FwQWEvOEx3Tm1mcXE1dDJ4V0ExdjRUZ0xNLzFWMXUzQldBMW40RzRPeFBGeCszN2dwQWF3S2d0YWRwY3Z0RFArZk51d0xRbWdCb1RRQzBKZ0JhTy9rQVRHZXVBTFFtQUZvVEFLMTlHWDBBUjN2NTQ1ZUgvOS9uUC8vWjhVaUlvUHlINERtRHYwY1E5WlFOWU12aFh4SkNIZVVDMkhQNGw0U1FYNWtBamh6K0pTSGtsVDZBa2NPL0pJUjhVbjhOR21uODB4VHZlTGd2YlFCUnh4YjF1TGd1WlFEUlJ4YjkrSGlYTG9BczQ4cHluTjJsQ2lEYnFMSWRiMGRwQXNnNnBxekgzVVdLQUxLUEtQdnhWNVlpQU5oTCtBQ3FuRDJydkk1cVFnZFFiVFRWWGs4Rm9RT0F2WVVOb09yWnN1cnJ5aXBzQUhBRUFkQmF5QUNxM3laVWYzMlpoQXdBamlJQVdoTUFyWVVMb012OWNaZlhHVjI0QU9CSUFxQTFBZENhQUdoTkFMUW1BRm9UQUswSmdOWUVRR3ZoQXVqeWdOa3Vyek82Y0FIQWtRUkFhd0tndFpBQlZMOC9ydjc2TWdrWkFCeEZBTFFXTm9DcXR3bFZYMWRXWVFPQUk0UU9vTnJac3RycnFTQjBBTk5VWnpSVlhrYzE0UU9BUGFVSUlQdlpNL3Z4VjVZaWdHbktPNktzeDkxRm1nQ21LZCtZc2gxdlI2a0NtS1k4bzhweW5OMmxDMkNhNG84cit2SHhMbVVBMHhSM1pGR1BpK3ZTQmpCTjhjWVc3WGk0Ny9UMTIvT1AwUWV4aFpFUG16WDh2TW9FY0haa0NJYWZYN2tBenZZTXdmRHJLQnZBMlpZaEdINDk1UU80TkNjSWc2K3ZYUUR3VWVxdlFXRXRBZENhQUdoTkFMUW1BRm9UQUswSmdOWUVRR3NDb0RVQjBKb0FhRTBBdFBabDlBSHc3dS92ZjQwK2hGUisvZTMzMVQvREZTQUk0NTl2aS9kTUFBRVkvM0pyM3pzQkRHYjg2NjE1RHdWQWF3S2dOUUhRbWdCb1RRQ0RiZkZkZG5kcjNrTUJCQ0NDNWRhK2R3SUlRZ1R6YmZHZWVTNFFyYmtDMEpvQWFFMEF0Q1lBV2hNQXJRbUExZ1JBYXdLZ05RSFFtZ0JvVFFDMDVyRW9nZmo5NEhrOEZxVVE0NS9QWTFHS01QN2xQQllsT2VOZnoyTlJZQ0VCMEpvQWFFMEF0Q2FBd2Z3eS9Ib2VpNUtjQ0pieldKUWlSRENmeDZMQVNxNEF0Q1lBV2hNQXJRbUExZ1JBYXdLZ05RSFFtZ0JvVFFDMEpnQmFlM3A3ZlRtTlBnZ1k0ZTMxNWVTeEtJSDQvZUI1UEJhbEVPT2Z6Mk5SaWpEKzVUd1dKVG5qWDIvMVkxRjhFS2FiOCtaZEFXaE5BTFQyTXdDM1FYVHhjZXV1QUlQNVpmajFObnNzaXF2QUdDSllidTU3ZDdseFY0QWdSRERmSm85RnVmWWZQU3FGaXE3ZDRiZ0MwTnJWQUh3V29KclBOdTBLUUd1ZkJ1QXFRQlczdG56ekNpQUNzcnUzWWJkQXRIWTNBRmNCc25wa3V3OWRBVVJBTm85dTl1RmJJQkdReFp5dHp2b01JQUtpbTd2UjJSK0NSVUJVUzdhNTZGc2dFUkROMGswdS9ocFVCRVN4Wm91ci9oNUFCSXkyZG9Pci95Sk1CSXl5eGZZMkhhL2ZJK0FJVzU1ME4vMm5FSzRHN0czcmplMDJXRmNEdHJUWHlYWDNNN1lRV0dQdnU0ckRibG1Fd0J4SDNVNGZmczh1Qkc0NStuUGswQSt0WW1DYXhuNTVFdTViRzFIVUZ1MmJ3bjhCYisrRjBsYThSR2NBQUFBQVNVVk9SSzVDWUlJPSIsInNpemVzIjoiMTkyeDE5MiIsInR5cGUiOiJpbWFnZS9wbmciLCJwdXJwb3NlIjoiYW55In0seyJzcmMiOiJkYXRhOmltYWdlL3BuZztiYXNlNjQsaVZCT1J3MEtHZ29BQUFBTlNVaEVVZ0FBQWdBQUFBSUFDQVlBQUFEMGVOVDZBQUFRSkVsRVFWUjRuTzNkdTNYa3hoYUdVVkJyTEtYQUFDaGJ0Sldaekp1WjdKRXRCYUFVNVBJYXMwZzF5VzcyQzBDZFUvL2VBV2lCaGNmNVVPQ0lEd3NsUFQ0OXY0dytCb0ExL1BQMzk0ZlJ4OEJuVHNvZ0JqekFEd0poREl1K0E4TWU0RHFpWUhzV2VBTUdQc0M2Qk1INkxPZ0tESHlBZlFtQysxbkFHeG42QURXSWdkdFl0Q3NZK2dDMWlZSExXYWd6REgyQW5zVEExeXpPQ1FZL3dCeUV3SEVXNVlDaER6QTNNZkFmQzdFWS9BQnBoRUI0QUJqOEFObVNReUR5QnpmNEFUaVVHQUpSUDdEQkQ4Qlhra0lnNGdjMStBRzRSa0lJL0RUNkFMWm0rQU53cllUWk1XM2hKSnc4QUxZMzYyN0FkRCtVd1EvQUZtWUxnYWsrQVJqK0FHeGx0aGt6UmMzTWRsSUFxRzJHM1lEMk93Q0dQd0I3bTJIMnRBNkFHVTRBQUQxMW4wRXR0ekM2THpvQWMrbjRTYURkRG9EaEQwQTFIV2RUcXdEb3VNQUFaT2cybzFwc1dYUmJWQUN5ZGZna1VINEh3UEFIb0pzT3M2dDBBSFJZUUFBNHB2b01LeHNBMVJjT0FNNnBQTXRLQmtEbEJRT0FhMVNkYWVVQ29PcENBY0N0S3M2MlVnRlFjWUVBWUEzVlpseVpBS2kyTUFDd3RrcXpya1FBVkZvUUFOaFNsWmszUEFDcUxBUUE3S1hDN0JzYUFCVVdBQUJHR0QwRGh3WEE2QjhjQUVZYk9RdUhCSURoRHdBL2pKcUp1d2VBNFE4QTc0MllqYnNHZ09FUEFNZnRQU04zQ3dEREh3Qyt0dWVzM0NVQURIOEF1TXhlTTNQNC93Y0FBTmpmNWdIZzdSOEFyclBIN053MEFBeC9BTGpOMWpOMHN3QXcvQUhnUGx2T1VyOERBQUNCTmdrQWIvOEFzSTZ0WnVycUFXRDRBOEM2dHBpdHF3YUE0UThBMjFoN3h2b2RBQUFJdEZvQWVQc0hnRzJ0T1d0WENRRERId0Qyc2RiTTlRa0FBQUxkSFFEZS9nRmdYMnZNWGpzQUFCRG9yZ0R3OWc4QVk5dzdnMjhPQU1NZkFNYTZaeGI3QkFBQWdXNEtBRy8vQUZERHJUUFpEZ0FBQkxvNkFMejlBMEF0dDh4bU93QUFFT2lxQVBEMkR3QTFYVHVqN1FBQVFLQ0xBOERiUHdEVWRzMnN0Z01BQUlFdUNnQnYvd0RRdzZVejJ3NEFBQVFTQUFBUTZHd0EyUDRIZ0Y0dW1kMTJBQUFnMEpjQjRPMGZBSG82TjhQdEFBQkFJQUVBQUlGT0JvRHRmd0RvN2F0WmJnY0FBQUlKQUFBSWREUUFiUDhEd0J4T3pYUTdBQUFRU0FBQVFLQlBBV0Q3SHdEbWNteTIyd0VBZ0VBQ0FBQUNDUUFBQ1BRdUFIei9CNEE1Zlp6eGRnQUFJSkFBQUlCQUFnQUFBcjBGZ08vL0FEQzN3MWx2QndBQUFna0FBQWdrQUFBZ2tBQUFnRUEvTFl0ZkFBU0FGSzh6M3c0QUFBUVNBQUFRU0FBQVFDQUJBQUNCQkFBQUJCSUFBQkJJQUFCQW9BZi9Ed0FBeUdNSEFBQUNDUUFBQ0NRQUFDQ1FBQUNBUU45R0h3Qjg5UDMzbjFmNTd6ei83OTlWL2pzQU0vS3ZBQmhtclVGL0xXRUFJQURZMGFpQmY0NGdBQklKQURaVGRlQ2ZJd2lBQkFLQVZYVWQrcWVJQVdCV0FvQlZ6RGI0UHhJQ3dHd0VBRGViZmVpZklnYUFHUWdBcnBZNitEOFNBa0JuQW9DTEdmekhDUUdnSXdIQVdRYi9aWVFBMElrQTRDU0QvelpDQU9qQTN3TGdLTVAvZHRZTzZNQU9BTzhZWHV1eUd3QlVaUWVBTjRiLytxd3BVSlVkQUF5cG5kZ05BQ3F4QXhETzhOK1B0UVlxRVFEQkRLVDlXWE9nQ3A4QUFobENOZmdrQUl4a0J5Q000VitIY3dHTUpBQ0NHRGoxT0NmQUtBSWdoRUZUbDNNRGpDQUFBaGd3OVRsSHdONEV3T1FNbGo2Y0syQlBBbUJpQmtvL3pobXdGd0V3S1lPa0wrY08ySU1BbUpBQjBwOXpDR3hOQUV6RzRKaUhjd2xzU1FCTXhNQ1lqM01LYkVVQVRNS2dtSmR6QzJ4QkFBQkFJQUV3QVcrSTgzT09nYlVKZ09ZTWhoek9OYkFtQWRDWWdaREhPUWZXSWdBQUlKQUFhTXFiWUM3bkhsaURBR2pJQU1BMUFOeExBQUJBSUFIUWpEYy9YcmtXZ0hzSUFBQUlKQUFhOGNiSFI2NEo0RllDb0FrUGVrNXhiUUMzRUFBQUVFZ0FOT0FOajNOY0k4QzFCQUFBQkJJQXhYbXo0MUt1RmVBYUFnQUFBZ21Bd3J6UmNTM1hESEFwQVFBQWdRUUFBQVFTQUVYWnl1VldyaDNnRWdJQUFBSUpnSUs4d1hFdjF4QndqZ0FBZ0VBQ0FBQUNDWUJpYk4yeUZ0Y1M4QlVCQUFDQkJBQUFCQklBQUJCSUFCVGlteTFyYzAwQnB3Z0FBQWdrQUFBZ2tBQUFnRUFDb0FqZmF0bUthd3M0UmdBQVFDQUJBQUNCQkFBQUJCSUFBQkJJQUFCQUlBRUFBSUVFUUFIK21SWmJjNDBCSHdrQUFBZ2tBQUFna0FBQWdFQUNBQUFDQ1FBQUNDUUFBQ0NRQUFDQVFBSUFBQUlKQUFBSUpBQUFJSkFBQUlCQUFnQUFBZ2tBQUFna0FBQWdrQUFBZ0VBQ0FBQUNDWUFDbnYvMzcraERZSEt1TWVBakFRQUFnUVFBQUFRU0FBQVFTQUFBUUNBQkFBQ0JCQUFBQkJJQVJmaG5XbXpGdFFVY0l3QUFJSkFBQUlCQUFnQUFBZ21BUW55clpXMnVLZUFVQVFBQWdRUUFBQVFTQUFBUVNBQVU0NXN0YTNFdEFWOFJBQUFRU0FBQVFDQUJVSkN0Vys3bEdnTE9FUUFBRUVnQUZPVU5qbHU1ZG9CTENBQUFDQ1FBQUNDUUFDak1WaTdYY3MwQWx4SUFBQkJJQUJUbmpZNUx1VmFBYXdnQUFBZ2tBQnJ3WnNjNXJoSGdXZ0lBQUFJSmdDYTg0WEdLYXdPNGhRQm94SU9lajF3VHdLMEVBQUFFRWdETmVPUGpsV3NCdUljQUFJQkFBcUFoYjM2NEJvQjdDWUNtRElCY3pqMndCZ0VBQUlFRVFHUGVCUE00NThCYUJFQnpCa0lPNXhwWWt3Q1lnTUV3UCtjWVdKc0FBSUJBQW1BUzNoRG41ZHdDV3hBQUV6RW81dU9jQWxzUkFKTXhNT2JoWEFKYkVnQVRNamo2Y3c2QnJRbUFTUmtnZlRsM3dCNEV3TVFNa242Y00yQXZBbUJ5QmtvZnpoV3dKd0VRd0dDcHp6a0M5aVlBUWhnd2RUazN3QWdDSUloQlU0OXpBb3dpQU1JWU9IVTRGOEJJRDQ5UHp5K2pENEl4dnYvKzgraERpR1R3QXhYWUFRaG1FTzNQbWdOVkNJQndCdEorckRWUWlVOEF2UEZKWUJzR1AxQ1JIUURlR0ZUcnM2WkFWWFlBT01wdXdIME1mcUE2T3dBY1pZRGR6dG9CSGRnQjRDeTdBWmN4K0lGT0JBQVhFd0xIR2Z4QVJ3S0Fxd21CSHd4K29ETUJ3TTFTUThEZ0IyWWdBRmpGN0RGZzZBT3pFUUNzYXJZUU1QaUJXUWtBTnRNMUJneDlJSUVBWURkVmc4REFCeElKQUlZWkZRUUdQb0FBb0tDMXdzQ2dCemhOQUFCQUlIOExBQUFDQ1FBQUNDUUFBQ0NRQUFDQVFBSUFBQUlKQUFBSUpBQUFJSkFBQUlCQUFnQUFBZ2tBQUFna0FBQWdrQUFBZ0VBQ0FBQUNDUUFBQ0NRQUFDQ1FBQUNBUUFJQUFBSUpBQUFJSkFBQUlKQUFBSUJBQWdBQUFna0FBQWdrQUFBZ2tBQUFnRUFDQUFBQ0NRQUFDQ1FBQUNDUUFBQ0FRQUlBQUFJSkFBQUlKQUFBSUpBQUFJQkFBZ0FBQWdrQUFBajBiZlFCQVBYOTllY2ZvdzhCeXZqbDE5OUdIOElxSGg2Zm5sOUdId1JRajZFUDUzV09BWjhBZ0U4TWY3aE01M3RGQUFEdmRINmd3UWhkN3hrQkFMenAraUNEMFRyZU93SUFXSmFsNXdNTUt1bDJEd2tBb04yREM2cnFkQzhKQUFqWDZZRUZIWFM1cHdRQUFBUVNBQUFRU0FCQXNDNWJsZEJOaDN0TEFBQkFJQUVBQUlFRUFBQUVFZ0FBRUVnQUFFQWdBUUFBZ1FRQUJPdjh0OHloc2c3M2xnQUFnRUFDQUFBQ0NRQUkxMkdyRWpycGNrOEpBS0ROQXd1cTYzUXZDUUJnV1paZUR5Nm9xTnM5SkFDQU45MGVZRkJGeDN0SEFBRHZkSHlRd1VoZDd4a0JBSHpTOVlFR2UrdDhyenc4UGoyL2pENElvTFlPZjlzYzl0SjU2QjhTQUFBUXlDY0FBQWdrQUFBZ2tBQUFnRUFDQUFBQ0NRQUFDQ1FBQUNDUUFBQ0FRQUlBQUFJSkFBQUlKQUFBSUpBQUFJQkFBZ0FBQWdrQUFBZ2tBQUFna0FBQWdFQUNBQUFDQ1FBQUNDUUFBQ0NRQUFDQVFBSUFBQUlKQUFBSUpBQUFJSkFBQUlCQUFnQUFBZ2tBQUFna0FBQWdrQUFBZ0VBQ0FBQUNDUUFBQ0NRQUFDQ1FBQUNBUUFJQUFBSUpBQUFJOUczMEFRRDEvZlhuSDZNUEFjcjQ1ZGZmUmgvQ0toNGVuNTVmUmg4RVVJK2hEK2QxamdHZkFJQlBESCs0VE9kN1JRQUE3M1Irb01FSVhlOFpBUUM4NmZvZ2c5RTYzanNDQUZpV3BlY0REQ3JwZGc4SkFLRGRnd3VxNm5RdkNRQUkxK21CQlIxMHVhY0VBQUFFRWdBQUVFZ0FRTEF1VzVYUVRZZDdTd0FBUUNBQkFBQ0JCQUFBQkJJQUFCQklBQUJBSUFFQUFJRUVBQVRyL0xmTW9iSU85NVlBQUlCQUFnQUFBZ2tBQ05kaHF4STY2WEpQQ1FDZ3pRTUxxdXQwTHdrQVlGbVdYZzh1cUtqYlBTUUFnRGZkSG1CUVJjZDdSd0FBNzNSOGtNRklYZThaQVFCODB2V0JCbnZyZks4OFBENDl2NHcrQ0tDMkRuL2JIUGJTZWVnZkVnQUFFTWduQUFBSUpBQUFJSkFBQUlCQUFnQUFBZ2tBQUFna0FBQWdrQUFBZ0VBQ0FBQUNDUUFBQ0NRQUFDQ1FBQUNBUUFJQUFBSUpBQUFJSkFBQUlKQUFBSUJBQWdBQUFna0FBQWdrQUFBZ2tBQUFnRUFDQUFBQ0NRQUFDQ1FBQUNDUUFBQ0FRQUlBQUFMOTlNL2YzeDlHSHdRQXNKOS8vdjcrWUFjQUFBSUpBQUFJSkFBQUlKQUFBSUJBQWdBQUFna0FBQWdrQUFBZzBFL0w4dVBmQTQ0K0VBQmdlNjh6M3c0QUFBVDZOdm9BZ1ByKyt2T1AwWWNBWmZ6eTYyK2pEMkVWQWdBNHl0Q0g0dzd2amM0eDRCTUE4SW5oRDVmcGZLKzgrK1cveDZmbmwxRUhBb3pYK1dFR28zWFlEVGo4cFg4N0FNQ3lMSVkvM0t2YlBTUUFBQ0NRQUFEYXZibEFWWjN1cFhjQjRIOElCSGs2UGJDZ2c2cjMxTWNaYndjQUFBSUpBQUFJSkFBZ1dOV3RTdWl1dzczMUtRRDhIZ0FBek9YWWJMY0RBQUNCQkFBQUJEb2FBRDREQU1BY1RzMTBPd0FBRUVnQVFMQU9mN3dFT3Vwd2I1ME1BSjhCQUtDM3IyYTVIUUFBQ0NRQUlGeUhyVXJvcE1zOTlXVUErQXdBR2JvOHNLQzZTdmZTdVJsdUJ3QUFBcDBOQUxzQWtLSFNtd3QwVk9rZXVtUjJmOXZqUUlBZVhoOWdIZjZRQ1ZSUmFmQmZ3eWNBNEpPdUR6VFlXK2Q3NWVMdC9jZW41NWN0RHdTb3k0NEEvS2Y2MEwvMDA3MVBBTUJaMVI5NHdQVXUvZ1RnbHdFQm9MWnJaclhmQVFDQVFGY0ZnRjBBQUtqcDJobHRCd0FBQWwwZEFIWUJBS0NXVzJhekhRQUFDSFJUQU5nRkFJQWFicDNKZGdBQUlORE5BV0FYQUFER3VtY1czN1VESUFJQVlJeDdaN0JQQUFBUTZPNEFzQXNBQVB0YVkvYmFBUUNBUUtzRWdGMEFBTmpIV2pOM3RSMEFFUUFBMjFwejF2b0VBQUNCVmcwQXV3QUFzSTIxWit6cU93QWlBQURXdGNWczNlUVRnQWdBZ0hWc05WUDlEZ0FBQk5vc0FPd0NBTUI5dHB5bG0rNEFpQUFBdU0zV00zVHpUd0FpQUFDdXM4ZnM5RHNBQUJCb2x3Q3dDd0FBbDlsclp1NjJBeUFDQU9CcmU4N0tYVDhCaUFBQU9HN3ZHYm43N3dDSUFBQjRiOFJzSFBKTGdDSUFBSDRZTlJPSC9Tc0FFUUJBdXBHemNPZy9BeFFCQUtRYVBRT0gvMzhBUmk4QUFPeXR3dXdiSGdETFVtTWhBR0FQVldaZWlRQllsam9MQWdCYnFUVHJ5Z1RBc3RSYUdBQllVN1VaVnlvQWxxWGVBZ0hBdlNyT3RuSUJzQ3cxRndvQWJsRjFwcFVNZ0dXcHUyQUFjS25LczZ4c0FDeEw3WVVEZ0s5VW4yR2xBMkJaNmk4Z0FIelVZWGFWUDhCRGowL1BMNk9QQVFCTzZURDRYNVhmQVRqVWFXRUJ5Tkp0UnJVS2dHWHB0OEFBeksvamJHcDN3SWQ4RWdCZ3BJNkQvMVc3SFlCRG5SY2VnTjY2ejZEV0FiQXMvVThBQVAzTU1IdmEvd0NIZkJJQVlFc3pEUDVYN1hjQURzMTBZZ0NvWmJZWk05VVBjOGh1QUFCcm1HM3d2NXJ5aHpva0JBQzR4YXlELzlWVW53Q09tZjBFQXJDK2hOa3gvUTk0eUc0QUFGOUpHUHl2WW43UVEwSUFnRU5KZy85VjNBOThTQWdBWkVzYy9LOWlmL0JEUWdBZ1MvTGdmeFcvQUllRUFNRGNEUDcvV0lnVHhBREFIQXo5NHl6S0dVSUFvQ2VELzJzVzV3cGlBS0EyUS85eUZ1cEdZZ0NnQmtQL05oWnRCV0lBWUYrRy92MHM0QVlFQWNDNkRQejFXZEFkQ0FLQTZ4ajQyN1BBZzRnQ2dCOE0rekVzZWxFQ0FaaUZBVi9UL3dHbDBldllRQ0JCcEFBQUFBQkpSVTVFcmtKZ2dnPT0iLCJzaXplcyI6IjUxMng1MTIiLCJ0eXBlIjoiaW1hZ2UvcG5nIiwicHVycG9zZSI6ImFueSJ9LHsic3JjIjoiZGF0YTppbWFnZS9wbmc7YmFzZTY0LGlWQk9SdzBLR2dvQUFBQU5TVWhFVWdBQUFNQUFBQURBQ0FZQUFBQlMzR3dIQUFBRkdFbEVRVlI0bk8zY08zTGJaaGlHVVZEaktsdndBcHc2cXJPemxObFphcm1PRnFBdHBIVXFXZ3BEa2NUMS95N25sSm1NREhMZUJ3QnBDNmNwbUsvZm5uK01QZ2IyOC9iNmNocDlEQjhOUFJoalo1ckdSbkg0SDJ6MDNISjBESWY5WVliUEhFZUZzUHNmWXZpc3NYY0l1LzF3dzJkTGU0V3crUTgxZlBhMGRRaFBXLzR3NDJkdlcyOXNrNW9NbnhHMnVCcXN2Z0lZUDZOc3NiMVZBUmcvbzYzZDRPSUFqSjhvMW14eFVRREdUelJMTnprN0FPTW5xaVhibkJXQThSUGQzSTArSElEeGs4V2NyVDRVZ1BHVHphT2J2UnVBOFpQVkk5dmQ5SjlDUURZM0EzRDJKN3Q3Ry80MEFPT25pbHRiZGd0RWExY0RjUGFubXM4MjdRcEFhLzhMd05tZnFxNXQyeFdBMXY0VGdMTS8xVjF1M0JXQTFuNEc0T3hQRngrMzdncEFhd0tndGFkcGN2dERQK2ZOdXdMUW1nQm9UUUMwSmdCYU8va0FUR2V1QUxRbUFGb1RBSzE5R1gwQVIzdjU0NWVILzkvblAvL1o4VWlJb1B5SDREbUR2MGNROVpRTllNdmhYeEpDSGVVQzJIUDRsNFNRWDVrQWpoeitKU0hrbFQ2QWtjTy9KSVI4VW44TkdtbjgweFR2ZUxndmJRQlJ4eGIxdUxndVpRRFJSeGI5K0hpWExvQXM0OHB5bk4ybENpRGJxTElkYjBkcEFzZzZwcXpIM1VXS0FMS1BLUHZ4VjVZaUFOaEwrQUNxbkQycnZJNXFRZ2RRYlRUVlhrOEZvUU9BdllVTm9PclpzdXJyeWlwc0FIQUVBZEJheUFDcTN5WlVmMzJaaEF3QWppSUFXaE1BcllVTG9NdjljWmZYR1YyNEFPQklBcUExQWRDYUFHaE5BTFFtQUZvVEFLMEpnTllFUUd2aEF1anlnTmt1cnpPNmNBSEFrUVJBYXdLZ3RaQUJWTDgvcnY3Nk1na1pBQnhGQUxRV05vQ3F0d2xWWDFkV1lRT0FJNFFPb05yWnN0cnJxU0IwQU5OVVp6UlZYa2MxNFFPQVBhVUlJUHZaTS92eFY1WWlnR25LTzZLc3g5MUZtZ0NtS2QrWXNoMXZSNmtDbUtZOG84cHluTjJsQzJDYTRvOHIrdkh4TG1VQTB4UjNaRkdQaSt2U0JqQk44Y1lXN1hpNDcvVDEyL09QMFFleGhaRVBtelg4dk1vRWNIWmtDSWFmWDdrQXp2WU13ZkRyS0J2QTJaWWhHSDQ5NVFPNE5DY0lnNit2WFFEd1VlcXZRV0V0QWRDYUFHaE5BTFFtQUZvVEFLMEpnTllFUUdzQ29EVUIwSm9BYUUwQXRQWmw5QUh3N3UvdmY0MCtoRlIrL2UzMzFUL0RGU0FJNDU5dmkvZE1BQUVZLzNKcjN6c0JER2I4NjYxNUR3VkFhd0tnTlFIUW1nQm9UUUNEYmZGZGRuZHIza01CQkNDQzVkYStkd0lJUWdUemJmR2VlUzRRcmJrQzBKb0FhRTBBdENZQVdoTUFyUW1BMWdSQWF3S2dOUUhRbWdCb1RRQzA1ckVvZ2ZqOTRIazhGcVVRNDUvUFkxR0tNUDdsUEJZbE9lTmZ6Mk5SWUNFQjBKb0FhRTBBdENhQXdmd3kvSG9laTVLY0NKYnpXSlFpUkRDZng2TEFTcTRBdENZQVdoTUFyUW1BMWdSQWF3S2dOUUhRbWdCb1RRQzBKZ0JhZTNwN2ZUbU5QZ2dZNGUzMTVlU3hLSUg0L2VCNVBCYWxFT09mejJOUmlqRCs1VHdXSlRualgyLzFZMUY4RUthYjgrWmRBV2hOQUxUMk13QzNRWFR4Y2V1dUFJUDVaZmoxTm5zc2lxdkFHQ0pZYnU1N2Q3bHhWNEFnUkREZkpvOUZ1ZllmUFNxRmlxN2Q0YmdDME5yVkFId1dvSnJQTnUwS1FHdWZCdUFxUUJXM3RuenpDaUFDc3J1M1liZEF0SFkzQUZjQnNucGt1dzlkQVVSQU5vOXU5dUZiSUJHUXhaeXR6dm9NSUFLaW03dlIyUitDUlVCVVM3YTU2RnNnRVJETjBrMHUvaHBVQkVTeFpvdXIvaDVBQkl5MmRvT3IveUpNQkl5eXhmWTJIYS9mSStBSVc1NTBOLzJuRUs0RzdHM3JqZTAyV0ZjRHRyVFh5WFgzTTdZUVdHUHZ1NHJEYmxtRXdCeEgzVTRmZnM4dUJHNDUrblBrMEErdFltQ2F4bjU1RXU1YkcxSFVGdTJid244QmIrK0YwbGE4UkdjQUFBQUFTVVZPUks1Q1lJST0iLCJzaXplcyI6IjE5MngxOTIiLCJ0eXBlIjoiaW1hZ2UvcG5nIiwicHVycG9zZSI6Im1hc2thYmxlIn0seyJzcmMiOiJkYXRhOmltYWdlL3BuZztiYXNlNjQsaVZCT1J3MEtHZ29BQUFBTlNVaEVVZ0FBQWdBQUFBSUFDQVlBQUFEMGVOVDZBQUFRSkVsRVFWUjRuTzNkdTNYa3hoYUdVVkJyTEtYQUFDaGJ0Sldaekp1WjdKRXRCYUFVNVBJYXMwZzF5VzcyQzBDZFUvL2VBV2lCaGNmNVVPQ0lEd3NsUFQ0OXY0dytCb0ExL1BQMzk0ZlJ4OEJuVHNvZ0JqekFEd0poREl1K0E4TWU0RHFpWUhzV2VBTUdQc0M2Qk1INkxPZ0tESHlBZlFtQysxbkFHeG42QURXSWdkdFl0Q3NZK2dDMWlZSExXYWd6REgyQW5zVEExeXpPQ1FZL3dCeUV3SEVXNVlDaER6QTNNZkFmQzdFWS9BQnBoRUI0QUJqOEFObVNReUR5QnpmNEFUaVVHQUpSUDdEQkQ4Qlhra0lnNGdjMStBRzRSa0lJL0RUNkFMWm0rQU53cllUWk1XM2hKSnc4QUxZMzYyN0FkRCtVd1EvQUZtWUxnYWsrQVJqK0FHeGx0aGt6UmMzTWRsSUFxRzJHM1lEMk93Q0dQd0I3bTJIMnRBNkFHVTRBQUQxMW4wRXR0ekM2THpvQWMrbjRTYURkRG9EaEQwQTFIV2RUcXdEb3VNQUFaT2cybzFwc1dYUmJWQUN5ZGZna1VINEh3UEFIb0pzT3M2dDBBSFJZUUFBNHB2b01LeHNBMVJjT0FNNnBQTXRLQmtEbEJRT0FhMVNkYWVVQ29PcENBY0N0S3M2MlVnRlFjWUVBWUEzVlpseVpBS2kyTUFDd3RrcXpya1FBVkZvUUFOaFNsWmszUEFDcUxBUUE3S1hDN0JzYUFCVVdBQUJHR0QwRGh3WEE2QjhjQUVZYk9RdUhCSURoRHdBL2pKcUp1d2VBNFE4QTc0MllqYnNHZ09FUEFNZnRQU04zQ3dEREh3Qyt0dWVzM0NVQURIOEF1TXhlTTNQNC93Y0FBTmpmNWdIZzdSOEFyclBIN053MEFBeC9BTGpOMWpOMHN3QXcvQUhnUGx2T1VyOERBQUNCTmdrQWIvOEFzSTZ0WnVycUFXRDRBOEM2dHBpdHF3YUE0UThBMjFoN3h2b2RBQUFJdEZvQWVQc0hnRzJ0T1d0WENRRERId0Qyc2RiTTlRa0FBQUxkSFFEZS9nRmdYMnZNWGpzQUFCRG9yZ0R3OWc4QVk5dzdnMjhPQU1NZkFNYTZaeGI3QkFBQWdXNEtBRy8vQUZERHJUUFpEZ0FBQkxvNkFMejlBMEF0dDh4bU93QUFFT2lxQVBEMkR3QTFYVHVqN1FBQVFLQ0xBOERiUHdEVWRzMnN0Z01BQUlFdUNnQnYvd0RRdzZVejJ3NEFBQVFTQUFBUTZHd0EyUDRIZ0Y0dW1kMTJBQUFnMEpjQjRPMGZBSG82TjhQdEFBQkFJQUVBQUlGT0JvRHRmd0RvN2F0WmJnY0FBQUlKQUFBSWREUUFiUDhEd0J4T3pYUTdBQUFRU0FBQVFLQlBBV0Q3SHdEbWNteTIyd0VBZ0VBQ0FBQUNDUUFBQ1BRdUFIei9CNEE1Zlp6eGRnQUFJSkFBQUlCQUFnQUFBcjBGZ08vL0FEQzN3MWx2QndBQUFna0FBQWdrQUFBZ2tBQUFnRUEvTFl0ZkFBU0FGSzh6M3c0QUFBUVNBQUFRU0FBQVFDQUJBQUNCQkFBQUJCSUFBQkJJQUFCQW9BZi9Ed0FBeUdNSEFBQUNDUUFBQ0NRQUFDQ1FBQUNBUU45R0h3Qjg5UDMzbjFmNTd6ei83OTlWL2pzQU0vS3ZBQmhtclVGL0xXRUFJQURZMGFpQmY0NGdBQklKQURaVGRlQ2ZJd2lBQkFLQVZYVWQrcWVJQVdCV0FvQlZ6RGI0UHhJQ3dHd0VBRGViZmVpZklnYUFHUWdBcnBZNitEOFNBa0JuQW9DTEdmekhDUUdnSXdIQVdRYi9aWVFBMElrQTRDU0QvelpDQU9qQTN3TGdLTVAvZHRZTzZNQU9BTzhZWHV1eUd3QlVaUWVBTjRiLytxd3BVSlVkQUF5cG5kZ05BQ3F4QXhETzhOK1B0UVlxRVFEQkRLVDlXWE9nQ3A4QUFobENOZmdrQUl4a0J5Q000VitIY3dHTUpBQ0NHRGoxT0NmQUtBSWdoRUZUbDNNRGpDQUFBaGd3OVRsSHdONEV3T1FNbGo2Y0syQlBBbUJpQmtvL3pobXdGd0V3S1lPa0wrY08ySU1BbUpBQjBwOXpDR3hOQUV6RzRKaUhjd2xzU1FCTXhNQ1lqM01LYkVVQVRNS2dtSmR6QzJ4QkFBQkFJQUV3QVcrSTgzT09nYlVKZ09ZTWhoek9OYkFtQWRDWWdaREhPUWZXSWdBQUlKQUFhTXFiWUM3bkhsaURBR2pJQU1BMUFOeExBQUJBSUFIUWpEYy9YcmtXZ0hzSUFBQUlKQUFhOGNiSFI2NEo0RllDb0FrUGVrNXhiUUMzRUFBQUVFZ0FOT0FOajNOY0k4QzFCQUFBQkJJQXhYbXo0MUt1RmVBYUFnQUFBZ21Bd3J6UmNTM1hESEFwQVFBQWdRUUFBQVFTQUVYWnl1VldyaDNnRWdJQUFBSUpnSUs4d1hFdjF4QndqZ0FBZ0VBQ0FBQUNDWUJpYk4yeUZ0Y1M4QlVCQUFDQkJBQUFCQklBQUJCSUFCVGlteTFyYzAwQnB3Z0FBQWdrQUFBZ2tBQUFnRUFDb0FqZmF0bUthd3M0UmdBQVFDQUJBQUNCQkFBQUJCSUFBQkJJQUFCQUlBRUFBSUVFUUFIK21SWmJjNDBCSHdrQUFBZ2tBQUFna0FBQWdFQUNBQUFDQ1FBQUNDUUFBQ0NRQUFDQVFBSUFBQUlKQUFBSUpBQUFJSkFBQUlCQUFnQUFBZ2tBQUFna0FBQWdrQUFBZ0VBQ0FBQUNDWUFDbnYvMzcraERZSEt1TWVBakFRQUFnUVFBQUFRU0FBQVFTQUFBUUNBQkFBQ0JCQUFBQkJJQVJmaG5XbXpGdFFVY0l3QUFJSkFBQUlCQUFnQUFBZ21BUW55clpXMnVLZUFVQVFBQWdRUUFBQVFTQUFBUVNBQVU0NXN0YTNFdEFWOFJBQUFRU0FBQVFDQUJVSkN0Vys3bEdnTE9FUUFBRUVnQUZPVU5qbHU1ZG9CTENBQUFDQ1FBQUNDUUFDak1WaTdYY3MwQWx4SUFBQkJJQUJUbmpZNUx1VmFBYXdnQUFBZ2tBQnJ3WnNjNXJoSGdXZ0lBQUFJSmdDYTg0WEdLYXdPNGhRQm94SU9lajF3VHdLMEVBQUFFRWdETmVPUGpsV3NCdUljQUFJQkFBcUFoYjM2NEJvQjdDWUNtRElCY3pqMndCZ0VBQUlFRVFHUGVCUE00NThCYUJFQnpCa0lPNXhwWWt3Q1lnTUV3UCtjWVdKc0FBSUJBQW1BUzNoRG41ZHdDV3hBQUV6RW81dU9jQWxzUkFKTXhNT2JoWEFKYkVnQVRNamo2Y3c2QnJRbUFTUmtnZlRsM3dCNEV3TVFNa242Y00yQXZBbUJ5QmtvZnpoV3dKd0VRd0dDcHp6a0M5aVlBUWhnd2RUazN3QWdDSUloQlU0OXpBb3dpQU1JWU9IVTRGOEJJRDQ5UHp5K2pENEl4dnYvKzgraERpR1R3QXhYWUFRaG1FTzNQbWdOVkNJQndCdEorckRWUWlVOEF2UEZKWUJzR1AxQ1JIUURlR0ZUcnM2WkFWWFlBT01wdXdIME1mcUE2T3dBY1pZRGR6dG9CSGRnQjRDeTdBWmN4K0lGT0JBQVhFd0xIR2Z4QVJ3S0Fxd21CSHd4K29ETUJ3TTFTUThEZ0IyWWdBRmpGN0RGZzZBT3pFUUNzYXJZUU1QaUJXUWtBTnRNMUJneDlJSUVBWURkVmc4REFCeElKQUlZWkZRUUdQb0FBb0tDMXdzQ2dCemhOQUFCQUlIOExBQUFDQ1FBQUNDUUFBQ0NRQUFDQVFBSUFBQUlKQUFBSUpBQUFJSkFBQUlCQUFnQUFBZ2tBQUFna0FBQWdrQUFBZ0VBQ0FBQUNDUUFBQ0NRQUFDQ1FBQUNBUUFJQUFBSUpBQUFJSkFBQUlKQUFBSUJBQWdBQUFna0FBQWdrQUFBZ2tBQUFnRUFDQUFBQ0NRQUFDQ1FBQUNDUUFBQ0FRQUlBQUFJSkFBQUlKQUFBSUpBQUFJQkFBZ0FBQWdrQUFBajBiZlFCQVBYOTllY2ZvdzhCeXZqbDE5OUdIOElxSGg2Zm5sOUdId1JRajZFUDUzV09BWjhBZ0U4TWY3aE01M3RGQUFEdmRINmd3UWhkN3hrQkFMenAraUNEMFRyZU93SUFXSmFsNXdNTUt1bDJEd2tBb04yREM2cnFkQzhKQUFqWDZZRUZIWFM1cHdRQUFBUVNBQUFRU0FCQXNDNWJsZEJOaDN0TEFBQkFJQUVBQUlFRUFBQUVFZ0FBRUVnQUFFQWdBUUFBZ1FRQUJPdjh0OHloc2c3M2xnQUFnRUFDQUFBQ0NRQUkxMkdyRWpycGNrOEpBS0ROQXd1cTYzUXZDUUJnV1paZUR5Nm9xTnM5SkFDQU45MGVZRkJGeDN0SEFBRHZkSHlRd1VoZDd4a0JBSHpTOVlFR2UrdDhyenc4UGoyL2pENElvTFlPZjlzYzl0SjU2QjhTQUFBUXlDY0FBQWdrQUFBZ2tBQUFnRUFDQUFBQ0NRQUFDQ1FBQUNDUUFBQ0FRQUlBQUFJSkFBQUlKQUFBSUpBQUFJQkFBZ0FBQWdrQUFBZ2tBQUFna0FBQWdFQUNBQUFDQ1FBQUNDUUFBQ0NRQUFDQVFBSUFBQUlKQUFBSUpBQUFJSkFBQUlCQUFnQUFBZ2tBQUFna0FBQWdrQUFBZ0VBQ0FBQUNDUUFBQ0NRQUFDQ1FBQUNBUUFJQUFBSUpBQUFJOUczMEFRRDEvZlhuSDZNUEFjcjQ1ZGZmUmgvQ0toNGVuNTVmUmg4RVVJK2hEK2QxamdHZkFJQlBESCs0VE9kN1JRQUE3M1Irb01FSVhlOFpBUUM4NmZvZ2c5RTYzanNDQUZpV3BlY0REQ3JwZGc4SkFLRGRnd3VxNm5RdkNRQUkxK21CQlIxMHVhY0VBQUFFRWdBQUVFZ0FRTEF1VzVYUVRZZDdTd0FBUUNBQkFBQ0JCQUFBQkJJQUFCQklBQUJBSUFFQUFJRUVBQVRyL0xmTW9iSU85NVlBQUlCQUFnQUFBZ2tBQ05kaHF4STY2WEpQQ1FDZ3pRTUxxdXQwTHdrQVlGbVdYZzh1cUtqYlBTUUFnRGZkSG1CUVJjZDdSd0FBNzNSOGtNRklYZThaQVFCODB2V0JCbnZyZks4OFBENDl2NHcrQ0tDMkRuL2JIUGJTZWVnZkVnQUFFTWduQUFBSUpBQUFJSkFBQUlCQUFnQUFBZ2tBQUFna0FBQWdrQUFBZ0VBQ0FBQUNDUUFBQ0NRQUFDQ1FBQUNBUUFJQUFBSUpBQUFJSkFBQUlKQUFBSUJBQWdBQUFna0FBQWdrQUFBZ2tBQUFnRUFDQUFBQ0NRQUFDQ1FBQUNDUUFBQ0FRQUlBQUFMOTlNL2YzeDlHSHdRQXNKOS8vdjcrWUFjQUFBSUpBQUFJSkFBQUlKQUFBSUJBQWdBQUFna0FBQWdrQUFBZzBFL0w4dVBmQTQ0K0VBQmdlNjh6M3c0QUFBVDZOdm9BZ1ByKyt2T1AwWWNBWmZ6eTYyK2pEMkVWQWdBNHl0Q0g0dzd2amM0eDRCTUE4SW5oRDVmcGZLKzgrK1cveDZmbmwxRUhBb3pYK1dFR28zWFlEVGo4cFg4N0FNQ3lMSVkvM0t2YlBTUUFBQ0NRQUFEYXZibEFWWjN1cFhjQjRIOElCSGs2UGJDZ2c2cjMxTWNaYndjQUFBSUpBQUFJSkFBZ1dOV3RTdWl1dzczMUtRRDhIZ0FBek9YWWJMY0RBQUNCQkFBQUJEb2FBRDREQU1BY1RzMTBPd0FBRUVnQVFMQU9mN3dFT3Vwd2I1ME1BSjhCQUtDM3IyYTVIUUFBQ0NRQUlGeUhyVXJvcE1zOTlXVUErQXdBR2JvOHNLQzZTdmZTdVJsdUJ3QUFBcDBOQUxzQWtLSFNtd3QwVk9rZXVtUjJmOXZqUUlBZVhoOWdIZjZRQ1ZSUmFmQmZ3eWNBNEpPdUR6VFlXK2Q3NWVMdC9jZW41NWN0RHdTb3k0NEEvS2Y2MEwvMDA3MVBBTUJaMVI5NHdQVXUvZ1RnbHdFQm9MWnJaclhmQVFDQVFGY0ZnRjBBQUtqcDJobHRCd0FBQWwwZEFIWUJBS0NXVzJhekhRQUFDSFJUQU5nRkFJQWFicDNKZGdBQUlORE5BV0FYQUFER3VtY1czN1VESUFJQVlJeDdaN0JQQUFBUTZPNEFzQXNBQVB0YVkvYmFBUUNBUUtzRWdGMEFBTmpIV2pOM3RSMEFFUUFBMjFwejF2b0VBQUNCVmcwQXV3QUFzSTIxWit6cU93QWlBQURXdGNWczNlUVRnQWdBZ0hWc05WUDlEZ0FBQk5vc0FPd0NBTUI5dHB5bG0rNEFpQUFBdU0zV00zVHpUd0FpQUFDdXM4ZnM5RHNBQUJCb2x3Q3dDd0FBbDlsclp1NjJBeUFDQU9CcmU4N0tYVDhCaUFBQU9HN3ZHYm43N3dDSUFBQjRiOFJzSFBKTGdDSUFBSDRZTlJPSC9Tc0FFUUJBdXBHemNPZy9BeFFCQUtRYVBRT0gvMzhBUmk4QUFPeXR3dXdiSGdETFVtTWhBR0FQVldaZWlRQllsam9MQWdCYnFUVHJ5Z1RBc3RSYUdBQllVN1VaVnlvQWxxWGVBZ0hBdlNyT3RuSUJzQ3cxRndvQWJsRjFwcFVNZ0dXcHUyQUFjS25LczZ4c0FDeEw3WVVEZ0s5VW4yR2xBMkJaNmk4Z0FIelVZWGFWUDhCRGowL1BMNk9QQVFCTzZURDRYNVhmQVRqVWFXRUJ5Tkp0UnJVS2dHWHB0OEFBeksvamJHcDN3SWQ4RWdCZ3BJNkQvMVc3SFlCRG5SY2VnTjY2ejZEV0FiQXMvVThBQVAzTU1IdmEvd0NIZkJJQVlFc3pEUDVYN1hjQURzMTBZZ0NvWmJZWk05VVBjOGh1QUFCcm1HM3d2NXJ5aHpva0JBQzR4YXlELzlWVW53Q09tZjBFQXJDK2hOa3gvUTk0eUc0QUFGOUpHUHl2WW43UVEwSUFnRU5KZy85VjNBOThTQWdBWkVzYy9LOWlmL0JEUWdBZ1MvTGdmeFcvQUllRUFNRGNEUDcvV0lnVHhBREFIQXo5NHl6S0dVSUFvQ2VELzJzVzV3cGlBS0EyUS85eUZ1cEdZZ0NnQmtQL05oWnRCV0lBWUYrRy92MHM0QVlFQWNDNkRQejFXZEFkQ0FLQTZ4ajQyN1BBZzRnQ2dCOE0rekVzZWxFQ0FaaUZBVi9UL3dHbDBldllRQ0JCcEFBQUFBQkpSVTVFcmtKZ2dnPT0iLCJzaXplcyI6IjUxMng1MTIiLCJ0eXBlIjoiaW1hZ2UvcG5nIiwicHVycG9zZSI6Im1hc2thYmxlIn1dfQ==" />
+<meta name="theme-color" content="#1B2733" />
+<link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABS3GwHAAAFGElEQVR4nO3cO3LbZhiGUVDjKlvwApw6qrOzlNlZarmOFqAtpHUqWgpDkcT1/y7nlJmMDHLeBwBpC6cpmK/fnn+MPgb28/b6chp9DB8NPRhjZ5rGRnH4H2z03HJ0DIf9YYbPHEeFsPsfYvissXcIu/1ww2dLe4Ww+Q81fPa0dQhPW/4w42dvW29sk5oMnxG2uBqsvgIYP6Nssb1VARg/o63d4OIAjJ8o1mxxUQDGTzRLNzk7AOMnqiXbnBWA8RPd3I0+HIDxk8WcrT4UgPGTzaObvRuA8ZPVI9vd9J9CQDY3A3D2J7t7G/40AOOniltbdgtEa1cDcPanms827QpAa/8LwNmfqq5t2xWA1v4TgLM/1V1u3BWA1n4G4OxPFx+37gpAawKgtadpcvtDP+fNuwLQmgBoTQC0JgBaO/kATGeuALQmAFoTAK19GX0AR3v545eH/9/nP//Z8UiIoPyH4DmDv0cQ9ZQNYMvhXxJCHeUC2HP4l4SQX5kAjhz+JSHklT6AkcO/JIR8Un8NGmn80xTveLgvbQBRxxb1uLguZQDRRxb9+HiXLoAs48pynN2lCiDbqLIdb0dpAsg6pqzH3UWKALKPKPvxV5YiANhL+ACqnD2rvI5qQgdQbTTVXk8FoQOAvYUNoOrZsurryipsAHAEAdBayACq3yZUf32ZhAwAjiIAWhMArYULoMv9cZfXGV24AOBIAqA1AdCaAGhNALQmAFoTAK0JgNYEQGvhAujygNkurzO6cAHAkQRAawKgtZABVL8/rv76MgkZABxFALQWNoCqtwlVX1dWYQOAI4QOoNrZstrrqSB0ANNUZzRVXkc14QOAPaUIIPvZM/vxV5YigGnKO6Ksx91FmgCmKd+Ysh1vR6kCmKY8o8pynN2lC2Ca4o8r+vHxLmUA0xR3ZFGPi+vSBjBN8cYW7Xi47/T12/OP0QexhZEPmzX8vMoEcHZkCIafX7kAzvYMwfDrKBvA2ZYhGH495QO4NCcIg6+vXQDwUeqvQWEtAdCaAGhNALQmAFoTAK0JgNYEQGsCoDUB0JoAaE0AtPZl9AHw7u/vf40+hFR+/e331T/DFSAI459vi/dMAAEY/3Jr3zsBDGb86615DwVAawKgNQHQmgBoTQCDbfFddndr3kMBBCCC5da+dwIIQgTzbfGeeS4QrbkC0JoAaE0AtCYAWhMArQmA1gRAawKgNQHQmgBoTQC05rEogfj94Hk8FqUQ45/PY1GKMP7lPBYlOeNfz2NRYCEB0JoAaE0AtCaAwfwy/Hoei5KcCJbzWJQiRDCfx6LASq4AtCYAWhMArQmA1gRAawKgNQHQmgBoTQC0JgBae3p7fTmNPggY4e315eSxKIH4/eB5PBalEOOfz2NRijD+5TwWJTnjX2/1Y1F8EKab8+ZdAWhNALT2MwC3QXTxceuuAIP5Zfj1NnssiqvAGCJYbu57d7lxV4AgRDDfJo9FufYfPSqFiq7d4bgC0NrVAHwWoJrPNu0KQGufBuAqQBW3tnzzCiACsru3YbdAtHY3AFcBsnpkuw9dAURANo9u9uFbIBGQxZytzvoMIAKim7vR2R+CRUBUS7a56FsgERDN0k0u/hpUBESxZour/h5ABIy2doOr/yJMBIyyxfY2Ha/fI+AIW550N/2nEK4G7G3rje02WFcDtrTXyXX3M7YQWGPvu4rDblmEwBxH3U4ffs8uBG45+nPk0A+tYmCaxn55Eu5bG1HUFu2bwn8Bb++F0la8RGcAAAAASUVORK5CYII=" />
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABS3GwHAAAFGElEQVR4nO3cO3LbZhiGUVDjKlvwApw6qrOzlNlZarmOFqAtpHUqWgpDkcT1/y7nlJmMDHLeBwBpC6cpmK/fnn+MPgb28/b6chp9DB8NPRhjZ5rGRnH4H2z03HJ0DIf9YYbPHEeFsPsfYvissXcIu/1ww2dLe4Ww+Q81fPa0dQhPW/4w42dvW29sk5oMnxG2uBqsvgIYP6Nssb1VARg/o63d4OIAjJ8o1mxxUQDGTzRLNzk7AOMnqiXbnBWA8RPd3I0+HIDxk8WcrT4UgPGTzaObvRuA8ZPVI9vd9J9CQDY3A3D2J7t7G/40AOOniltbdgtEa1cDcPanms827QpAa/8LwNmfqq5t2xWA1v4TgLM/1V1u3BWA1n4G4OxPFx+37gpAawKgtadpcvtDP+fNuwLQmgBoTQC0JgBaO/kATGeuALQmAFoTAK19GX0AR3v545eH/9/nP//Z8UiIoPyH4DmDv0cQ9ZQNYMvhXxJCHeUC2HP4l4SQX5kAjhz+JSHklT6AkcO/JIR8Un8NGmn80xTveLgvbQBRxxb1uLguZQDRRxb9+HiXLoAs48pynN2lCiDbqLIdb0dpAsg6pqzH3UWKALKPKPvxV5YiANhL+ACqnD2rvI5qQgdQbTTVXk8FoQOAvYUNoOrZsurryipsAHAEAdBayACq3yZUf32ZhAwAjiIAWhMArYULoMv9cZfXGV24AOBIAqA1AdCaAGhNALQmAFoTAK0JgNYEQGvhAujygNkurzO6cAHAkQRAawKgtZABVL8/rv76MgkZABxFALQWNoCqtwlVX1dWYQOAI4QOoNrZstrrqSB0ANNUZzRVXkc14QOAPaUIIPvZM/vxV5YigGnKO6Ksx91FmgCmKd+Ysh1vR6kCmKY8o8pynN2lC2Ca4o8r+vHxLmUA0xR3ZFGPi+vSBjBN8cYW7Xi47/T12/OP0QexhZEPmzX8vMoEcHZkCIafX7kAzvYMwfDrKBvA2ZYhGH495QO4NCcIg6+vXQDwUeqvQWEtAdCaAGhNALQmAFoTAK0JgNYEQGsCoDUB0JoAaE0AtPZl9AHw7u/vf40+hFR+/e331T/DFSAI459vi/dMAAEY/3Jr3zsBDGb86615DwVAawKgNQHQmgBoTQCDbfFddndr3kMBBCCC5da+dwIIQgTzbfGeeS4QrbkC0JoAaE0AtCYAWhMArQmA1gRAawKgNQHQmgBoTQC05rEogfj94Hk8FqUQ45/PY1GKMP7lPBYlOeNfz2NRYCEB0JoAaE0AtCaAwfwy/Hoei5KcCJbzWJQiRDCfx6LASq4AtCYAWhMArQmA1gRAawKgNQHQmgBoTQC0JgBae3p7fTmNPggY4e315eSxKIH4/eB5PBalEOOfz2NRijD+5TwWJTnjX2/1Y1F8EKab8+ZdAWhNALT2MwC3QXTxceuuAIP5Zfj1NnssiqvAGCJYbu57d7lxV4AgRDDfJo9FufYfPSqFiq7d4bgC0NrVAHwWoJrPNu0KQGufBuAqQBW3tnzzCiACsru3YbdAtHY3AFcBsnpkuw9dAURANo9u9uFbIBGQxZytzvoMIAKim7vR2R+CRUBUS7a56FsgERDN0k0u/hpUBESxZour/h5ABIy2doOr/yJMBIyyxfY2Ha/fI+AIW550N/2nEK4G7G3rje02WFcDtrTXyXX3M7YQWGPvu4rDblmEwBxH3U4ffs8uBG45+nPk0A+tYmCaxn55Eu5bG1HUFu2bwn8Bb++F0la8RGcAAAAASUVORK5CYII=" />
+
+<style>
+:root {
+  --paper: #F3F5F6;
+  --paper-alt: #EAEDEE;
+  --ink: #1B2733;
+  --ink-soft: #5B6B78;
+  --line: #D7DCE0;
+  --amber: #E8A33D;
+  --amber-soft: #FBEEDA;
+  --blue: #4C7A96;
+  --radius: 10px;
+
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-data: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Header ---------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  background: var(--ink);
+  color: var(--paper);
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  flex: none;
+  background: var(--amber);
+  background-image: radial-gradient(circle at 34% 36%, rgba(255,255,255,0.55) 0 4px, transparent 5px);
+}
+
+.brand-text h1 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.date-line {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+  color: #B7C2CA;
+  font-variant-numeric: tabular-nums;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--amber);
+  color: #201202;
+}
+.btn-primary:hover { filter: brightness(1.05); }
+.btn-primary:disabled { opacity: 0.55; cursor: default; }
+
+.btn-quiet {
+  background: transparent;
+  border-color: #3C4C59;
+  color: var(--paper);
+}
+.btn-quiet:hover { background: #24333F; }
+
+.account-badge {
+  font-size: 0.8rem;
+  color: #B7C2CA;
+}
+
+/* ---------- Status ---------- */
+
+.status-bar {
+  padding: 0 20px;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  min-height: 0;
+}
+.status-bar:not(:empty) {
+  padding-top: 12px;
+  padding-bottom: 4px;
+}
+.status-bar.error { color: #A83A3A; }
+
+/* ---------- Schedule ---------- */
+
+main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 16px 20px 40px;
+}
+
+.schedule-wrap {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #fff;
+}
+
+.schedule-header,
+.row {
+  display: grid;
+  grid-template-columns: 84px 150px 1fr;
+  align-items: center;
+}
+
+.schedule-header {
+  padding: 10px 16px;
+  background: var(--paper-alt);
+  border-bottom: 1px solid var(--line);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.schedule-body .row {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  min-height: 52px;
+}
+.schedule-body .row:last-child { border-bottom: none; }
+.schedule-body .row:nth-child(even) { background: #FBFCFC; }
+
+.row.is-now {
+  background: var(--amber-soft);
+  box-shadow: inset 3px 0 0 var(--amber);
+}
+
+.row.is-past { opacity: 0.55; }
+
+.col-time {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.92rem;
+  color: var(--ink);
+}
+
+.col-weather {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+}
+.weather-icon { font-size: 1.15rem; font-family: var(--font-body); }
+.weather-temp { font-size: 0.92rem; }
+.weather-desc {
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.weather-cell-inner { display: flex; flex-direction: column; gap: 1px; }
+.weather-cell-top { display: flex; align-items: baseline; gap: 8px; }
+
+.col-calendar {
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.event {
+  display: block;
+  padding: 2px 0;
+}
+.event + .event { margin-top: 2px; }
+.event-time {
+  font-family: var(--font-data);
+  font-size: 0.72rem;
+  color: var(--blue);
+  margin-right: 6px;
+}
+.event-title { color: var(--ink); }
+
+.empty-slot {
+  color: #A7B0B8;
+}
+
+/* ---------- Footer ---------- */
+
+.foot {
+  text-align: center;
+  padding: 18px;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 640px) {
+  .schedule-header,
+  .row {
+    grid-template-columns: 62px 96px 1fr;
+  }
+  .weather-desc { display: none; }
+  .topbar { padding: 14px 16px; }
+}
+
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <div class="brand-text">
+      <h1>Weather Schedule</h1>
+      <p id="dateLine" class="date-line">&nbsp;</p>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="locateBtn" class="btn btn-quiet" type="button">Set location</button>
+    <button id="signInBtn" class="btn btn-primary" type="button">Connect calendar</button>
+    <span id="accountBadge" class="account-badge" hidden></span>
+  </div>
+</header>
+
+<div id="statusBar" class="status-bar" role="status" aria-live="polite"></div>
+
+<main>
+  <div class="schedule-wrap">
+    <div class="schedule-header" aria-hidden="true">
+      <span class="col-time">Time</span>
+      <span class="col-weather">Weather</span>
+      <span class="col-calendar">Calendar</span>
+    </div>
+    <div id="scheduleBody" class="schedule-body">
+      <!-- hour rows injected here -->
+    </div>
+  </div>
+</main>
+
+<footer class="foot">
+  <p>Weather from Open-Meteo &middot; Calendar from your Google account, read-only</p>
+</footer>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+const CONFIG = {
+  // Paste your Google OAuth Client ID here (see the "Google setup" comment
+  // block right below) -- everything else in this file can stay as-is.
+  GOOGLE_CLIENT_ID: "YOUR_CLIENT_ID.apps.googleusercontent.com",
+  GOOGLE_SCOPE: "https://www.googleapis.com/auth/calendar.readonly",
+  CALENDAR_ID: "primary",
+};
+
+// =================================================================
+// Weather Schedule — app logic
+// =================================================================
+
+const els = {
+  dateLine: document.getElementById("dateLine"),
+  statusBar: document.getElementById("statusBar"),
+  scheduleBody: document.getElementById("scheduleBody"),
+  locateBtn: document.getElementById("locateBtn"),
+  signInBtn: document.getElementById("signInBtn"),
+  accountBadge: document.getElementById("accountBadge"),
+};
+
+const state = {
+  latitude: null,
+  longitude: null,
+  placeName: null,
+  weatherByHour: {},     // { 0: {temp, code}, 1: {...}, ... }
+  eventsByHour: {},      // { 0: [ {title, startLabel, allDay} ], ... }
+  allDayEvents: [],
+  accessToken: null,
+  tokenClient: null,
+};
+
+const WMO = {
+  0:  ["\u2600\uFE0F", "Clear sky"],
+  1:  ["\uD83C\uDF24\uFE0F", "Mostly clear"],
+  2:  ["\u26C5", "Partly cloudy"],
+  3:  ["\u2601\uFE0F", "Overcast"],
+  45: ["\uD83C\uDF2B\uFE0F", "Fog"],
+  48: ["\uD83C\uDF2B\uFE0F", "Rime fog"],
+  51: ["\uD83C\uDF26\uFE0F", "Light drizzle"],
+  53: ["\uD83C\uDF26\uFE0F", "Drizzle"],
+  55: ["\uD83C\uDF27\uFE0F", "Dense drizzle"],
+  56: ["\uD83C\uDF27\uFE0F", "Freezing drizzle"],
+  57: ["\uD83C\uDF27\uFE0F", "Freezing drizzle"],
+  61: ["\uD83C\uDF27\uFE0F", "Light rain"],
+  63: ["\uD83C\uDF27\uFE0F", "Rain"],
+  65: ["\uD83C\uDF27\uFE0F", "Heavy rain"],
+  66: ["\uD83C\uDF27\uFE0F", "Freezing rain"],
+  67: ["\uD83C\uDF27\uFE0F", "Freezing rain"],
+  71: ["\uD83C\uDF28\uFE0F", "Light snow"],
+  73: ["\uD83C\uDF28\uFE0F", "Snow"],
+  75: ["\uD83C\uDF28\uFE0F", "Heavy snow"],
+  77: ["\uD83C\uDF28\uFE0F", "Snow grains"],
+  80: ["\uD83C\uDF26\uFE0F", "Rain showers"],
+  81: ["\uD83C\uDF26\uFE0F", "Rain showers"],
+  82: ["\u26C8\uFE0F", "Violent showers"],
+  85: ["\uD83C\uDF28\uFE0F", "Snow showers"],
+  86: ["\uD83C\uDF28\uFE0F", "Snow showers"],
+  95: ["\u26C8\uFE0F", "Thunderstorm"],
+  96: ["\u26C8\uFE0F", "Thunderstorm, hail"],
+  99: ["\u26C8\uFE0F", "Thunderstorm, hail"],
+};
+
+function setStatus(msg, isError) {
+  els.statusBar.textContent = msg || "";
+  els.statusBar.classList.toggle("error", !!isError);
+}
+
+function pad2(n) { return String(n).padStart(2, "0"); }
+
+function hourLabel(h) {
+  const period = h < 12 ? "AM" : "PM";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:00 ${period}`;
+}
+
+// ---------------- Skeleton render ----------------
+
+function buildSkeleton() {
+  els.scheduleBody.innerHTML = "";
+  const now = new Date();
+  const currentHour = now.getHours();
+
+  for (let h = 0; h < 24; h++) {
+    const row = document.createElement("div");
+    row.className = "row";
+    row.id = `row-${h}`;
+    if (h === currentHour) row.classList.add("is-now");
+    else if (h < currentHour) row.classList.add("is-past");
+
+    row.innerHTML = `
+      <span class="col-time">${hourLabel(h)}</span>
+      <span class="col-weather" id="weather-${h}">
+        <span class="weather-cell-inner">
+          <span class="weather-cell-top">
+            <span class="weather-icon">\u2013</span>
+          </span>
+        </span>
+      </span>
+      <span class="col-calendar" id="calendar-${h}">
+        <span class="empty-slot">\u2014</span>
+      </span>
+    `;
+    els.scheduleBody.appendChild(row);
+  }
+}
+
+function scrollToNow() {
+  const now = new Date().getHours();
+  const row = document.getElementById(`row-${now}`);
+  if (row) row.scrollIntoView({ block: "center", behavior: "smooth" });
+}
+
+els.dateLine.textContent = new Date().toLocaleDateString(undefined, {
+  weekday: "long", month: "long", day: "numeric",
+});
+
+buildSkeleton();
+
+// ---------------- Weather ----------------
+
+async function fetchWeather(lat, lon) {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+    `&hourly=temperature_2m,weathercode&temperature_unit=fahrenheit&timezone=auto&forecast_days=1`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Weather request failed");
+  const data = await res.json();
+
+  const times = data.hourly.time;       // ["2026-09-02T00:00", ...]
+  const temps = data.hourly.temperature_2m;
+  const codes = data.hourly.weathercode;
+
+  state.weatherByHour = {};
+  times.forEach((t, i) => {
+    const h = Number(t.slice(11, 13));
+    state.weatherByHour[h] = { temp: Math.round(temps[i]), code: codes[i] };
+  });
+
+  renderWeatherColumn();
+}
+
+function renderWeatherColumn() {
+  for (let h = 0; h < 24; h++) {
+    const cell = document.getElementById(`weather-${h}`);
+    if (!cell) continue;
+    const w = state.weatherByHour[h];
+    if (!w) continue;
+    const [icon, desc] = WMO[w.code] || ["\u2013", "Unknown"];
+    cell.innerHTML = `
+      <span class="weather-cell-inner">
+        <span class="weather-cell-top">
+          <span class="weather-icon">${icon}</span>
+          <span class="weather-temp">${w.temp}\u00B0</span>
+        </span>
+        <span class="weather-desc">${desc}</span>
+      </span>
+    `;
+  }
+}
+
+async function geocodePlace(query) {
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Location lookup failed");
+  const data = await res.json();
+  if (!data.results || !data.results.length) throw new Error("No matching place found");
+  const r = data.results[0];
+  return {
+    latitude: r.latitude,
+    longitude: r.longitude,
+    name: [r.name, r.admin1, r.country].filter(Boolean).join(", "),
+  };
+}
+
+async function useCoords(lat, lon, label) {
+  state.latitude = lat;
+  state.longitude = lon;
+  state.placeName = label || null;
+  setStatus(label ? `Loading weather for ${label}\u2026` : "Loading weather\u2026");
+  try {
+    await fetchWeather(lat, lon);
+    setStatus(label ? `Showing weather for ${label}` : "");
+  } catch (err) {
+    setStatus("Couldn't load weather: " + err.message, true);
+  }
+}
+
+function tryGeolocation() {
+  if (!("geolocation" in navigator)) {
+    promptForPlace();
+    return;
+  }
+  setStatus("Finding your location\u2026");
+  navigator.geolocation.getCurrentPosition(
+    (pos) => useCoords(pos.coords.latitude, pos.coords.longitude, null),
+    () => promptForPlace(),
+    { timeout: 8000 }
+  );
+}
+
+async function promptForPlace() {
+  const q = window.prompt("City name (e.g. \"Port Huron, MI\")");
+  if (!q) {
+    setStatus("Location needed to show weather.", true);
+    return;
+  }
+  setStatus(`Looking up ${q}\u2026`);
+  try {
+    const place = await geocodePlace(q);
+    await useCoords(place.latitude, place.longitude, place.name);
+  } catch (err) {
+    setStatus("Couldn't find that place: " + err.message, true);
+  }
+}
+
+els.locateBtn.addEventListener("click", promptForPlace);
+
+// ---------------- Google Calendar ----------------
+
+function initGoogle() {
+  if (!window.google || !google.accounts || !google.accounts.oauth2) {
+    // GIS script not ready yet — try again shortly.
+    setTimeout(initGoogle, 300);
+    return;
+  }
+  state.tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CONFIG.GOOGLE_CLIENT_ID,
+    scope: CONFIG.GOOGLE_SCOPE,
+    callback: (resp) => {
+      if (resp.error) {
+        setStatus("Calendar sign-in failed: " + resp.error, true);
+        return;
+      }
+      state.accessToken = resp.access_token;
+      els.signInBtn.textContent = "Refresh calendar";
+      els.accountBadge.hidden = false;
+      els.accountBadge.textContent = "Calendar connected";
+      loadCalendarEvents();
+    },
+  });
+}
+
+els.signInBtn.addEventListener("click", () => {
+  if (CONFIG.GOOGLE_CLIENT_ID.startsWith("YOUR_CLIENT_ID")) {
+    setStatus("Add your Google Client ID in config.js first — see the comments in that file.", true);
+    return;
+  }
+  if (!state.tokenClient) {
+    setStatus("Still loading Google sign-in\u2026 try again in a second.", true);
+    return;
+  }
+  state.tokenClient.requestAccessToken({ prompt: state.accessToken ? "" : "consent" });
+});
+
+async function loadCalendarEvents() {
+  setStatus("Loading today's events\u2026");
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
+
+  const params = new URLSearchParams({
+    timeMin: startOfDay.toISOString(),
+    timeMax: endOfDay.toISOString(),
+    singleEvents: "true",
+    orderBy: "startTime",
+    maxResults: "50",
+  });
+
+  const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CONFIG.CALENDAR_ID)}/events?${params}`;
+
+  try {
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${state.accessToken}` },
+    });
+    if (res.status === 401) {
+      setStatus("Calendar session expired — click \"Refresh calendar\" to sign in again.", true);
+      state.accessToken = null;
+      els.signInBtn.textContent = "Connect calendar";
+      return;
+    }
+    if (!res.ok) throw new Error(`Calendar request failed (${res.status})`);
+    const data = await res.json();
+    bucketEvents(data.items || []);
+    renderCalendarColumn();
+    setStatus("");
+  } catch (err) {
+    setStatus("Couldn't load calendar: " + err.message, true);
+  }
+}
+
+function bucketEvents(items) {
+  state.eventsByHour = {};
+  state.allDayEvents = [];
+
+  for (const ev of items) {
+    const title = ev.summary || "(No title)";
+
+    if (ev.start && ev.start.date && !ev.start.dateTime) {
+      // all-day event
+      state.allDayEvents.push(title);
+      continue;
+    }
+    if (!ev.start || !ev.start.dateTime) continue;
+
+    const start = new Date(ev.start.dateTime);
+    const h = start.getHours();
+    const timeLabel = start.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+
+    if (!state.eventsByHour[h]) state.eventsByHour[h] = [];
+    state.eventsByHour[h].push({ title, timeLabel });
+  }
+}
+
+function renderCalendarColumn() {
+  for (let h = 0; h < 24; h++) {
+    const cell = document.getElementById(`calendar-${h}`);
+    if (!cell) continue;
+
+    const items = state.eventsByHour[h] || [];
+    const allDayHtml = h === 0
+      ? state.allDayEvents.map(t => `<span class="event"><span class="event-time">All day</span><span class="event-title">${escapeHtml(t)}</span></span>`).join("")
+      : "";
+
+    if (!items.length && !allDayHtml) {
+      cell.innerHTML = `<span class="empty-slot">\u2014</span>`;
+      continue;
+    }
+
+    const eventsHtml = items
+      .map(e => `<span class="event"><span class="event-time">${e.timeLabel}</span><span class="event-title">${escapeHtml(e.title)}</span></span>`)
+      .join("");
+
+    cell.innerHTML = allDayHtml + eventsHtml;
+  }
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
+
+// ---------------- Boot ----------------
+
+initGoogle();
+tryGeolocation();
+setTimeout(scrollToNow, 400);
+
+</script>
+</body>
+</html>
