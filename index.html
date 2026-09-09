@@ -624,21 +624,38 @@ function bucketEvents(items) {
     const title = ev.summary || "(No title)";
 
     if (ev.start && ev.start.date && !ev.start.dateTime) {
-      // all-day event
       state.allDayEvents.push(title);
       continue;
     }
-    if (!ev.start || !ev.start.dateTime) continue;
+
+    if (!ev.start || !ev.start.dateTime || !ev.end || !ev.end.dateTime) {
+      continue;
+    }
 
     const start = new Date(ev.start.dateTime);
-    const h = start.getHours();
-    const timeLabel = start.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+    const end = new Date(ev.end.dateTime);
+    const timeLabel = start.toLocaleTimeString(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+    });
 
-    if (!state.eventsByHour[h]) state.eventsByHour[h] = [];
-    state.eventsByHour[h].push({ title, timeLabel });
+    const eventData = { title, timeLabel };
+
+    const hour = new Date(start);
+    hour.setMinutes(0, 0, 0);
+
+    while (hour < end) {
+      const h = hour.getHours();
+
+      if (!state.eventsByHour[h]) {
+        state.eventsByHour[h] = [];
+      }
+
+      state.eventsByHour[h].push(eventData);
+      hour.setHours(hour.getHours() + 1);
+    }
   }
 }
-
 function renderCalendarColumn() {
   for (let h = 0; h < 24; h++) {
     const cell = document.getElementById(`calendar-${h}`);
